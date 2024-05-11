@@ -1,0 +1,6 @@
+#sceneCanvas {
+  max-width: 80vw;
+  max-height: 90vh;
+  margin: 2%;
+  outline: black 3px solid;
+}
