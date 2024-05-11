@@ -24,7 +24,10 @@ function mainLoop() {
     movePlayer(player);
     updatePlayerVelocity(player);
 
-    if (detectPlayerWallCollision(player, walls, sceneCanvas.height)) {
+    if (
+      detectPlayerWallCollision(player, walls, sceneCanvas.height) ||
+      detectPlayerFloorCollision(player)
+    ) {
       gameOver = true;
     }
   }
@@ -117,10 +120,12 @@ function updateWalls(
     }
   }
 }
+
+function detectPlayerFloorCollision(player) {
+  return player.yPosition <= 0;
+}
 function detectPlayerWallCollision(player, walls, canvasHeight) {
   for (let i = 0; i < walls.length; i++) {
-    console.log(walls[i]);
-    console.log(player);
     if (
       rectCollision(
         player.xPosition,
