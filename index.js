@@ -219,6 +219,95 @@ class Player {
   }
 }
 
+class NeuralNetwork {
+  constructor(numberOfInputs, hiddenLayersInputs, numberOfOutputs) {
+    let inputNeurons = [];
+    for (let i = 0; i < numberOfInputs; i++) {
+      inputNeurons.push(new Neuron(1));
+    }
+    this.inputLayer = new Layer(inputNeurons);
+
+    this.hiddenLayers = [];
+    for (let i = 0; i < hiddenLayersInputs.length; i++) {
+      let hiddenLayerNeurons = [];
+      for (let j = 0; j < hiddenLayersInputs[i]; j++) {
+        if (i == 0) {
+          hiddenLayerNeurons.push(new Neuron(numberOfInputs));
+        } else {
+          hiddenLayerNeurons.push(new Neuron(hiddenLayersInputs[i - 1]));
+        }
+      }
+      this.hiddenLayers.push(new Layer(hiddenLayerNeurons));
+    }
+
+    let outputNeurons = [];
+    for (let i = 0; i < numberOfOutputs; i++) {
+      outputNeurons.push(new Neuron(1));
+    }
+    this.outputLayer = new Layer(outputNeurons);
+  }
+
+  computeOutputs(inputs) {
+    let inputLayerOutputs = this.inputLayer.computeOutputs(inputs);
+    let hiddenLayerOutputs = inputLayerOutputs;
+    for (let i = 0; i < this.hiddenLayers.length; i++) {
+      hiddenLayerOutputs =
+        this.hiddenLayers[i].computeOutputs(hiddenLayerOutputs);
+    }
+    let outputLayerOutputs =
+      this.outputLayer.computeOutputs(hiddenLayerOutputs);
+
+    return outputLayerOutputs;
+  }
+}
+
+class Layer {
+  constructor(neurons) {
+    this.neurons = neurons;
+  }
+
+  computeOutputs(inputs) {
+    let outputs = [];
+    for (let i = 0; i < this.neurons.length; i++) {
+      for (let j = 0; j < this.neurons[i].weights.length; j++) {
+        outputs.push(this.neurons[i].compute([inputs[j]]));
+      }
+    }
+    return outputs;
+  }
+}
+
+class Neuron {
+  constructor(numberOfInputs) {
+    this.weights = [];
+    this.bias = Math.random() - 0.5;
+    for (let i = 0; i < numberOfInputs; i++) {
+      this.weights.push(Math.random() - 0.5);
+    }
+  }
+
+  compute(inputs) {
+    if (inputs.length != this.weights.length) {
+      return "Error, weights and inputs must have the same length";
+    }
+
+    let output = 0;
+    for (let i = 0; i < inputs.length; i++) {
+      output += inputs[i] * this.weights[i];
+    }
+
+    output += this.bias;
+
+    return sigmoid(output);
+  }
+}
+let network = new NeuralNetwork(5, [], 1);
+console.log(network.computeOutputs([0, 1, 1, 1, 1]));
+
+function sigmoid(z) {
+  return 1 / (1 + Math.exp(-z));
+}
+
 document.addEventListener("keypress", function onEvent(event) {
   if (event.key === " ") {
     jumpPlayer(player);
