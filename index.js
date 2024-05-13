@@ -9,7 +9,6 @@ let totalAgents = 1000;
 let geneticDivergenceFactor = 0.1;
 let startingWallSpeed = 5;
 let wallSpeed = startingWallSpeed;
-
 let mainLoopInterval;
 let aliveAgents = document.getElementById("aliveAgents");
 function initializeScene() {
@@ -132,10 +131,11 @@ function mainLoop() {
   if (geneticDivergenceFactor > 0.005) {
     geneticDivergenceFactor -= 0.00001;
   } else {
-    geneticDivergenceFactor = 0;
+    geneticDivergenceFactor = 0.0;
   }
 
   wallSpeed += 0.001;
+
   if (livingPlayersCount == 0) {
     clearInterval(mainLoopInterval);
     newGeneration(networks[getMostRecentIndices(networksFailureTimes, 1)]);
