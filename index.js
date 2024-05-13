@@ -134,7 +134,6 @@ function mainLoop() {
   } else {
     geneticDivergenceFactor = 0;
   }
-  console.log(geneticDivergenceFactor);
 
   wallSpeed += 0.001;
   if (livingPlayersCount == 0) {
