@@ -5,8 +5,8 @@ let players = [];
 let gameOver = [];
 let networks = [];
 let networksFailureTimes = [];
-let totalAgents = 1;
-let geneticDivergenceFactor = 1;
+let totalAgents = 1000;
+let geneticDivergenceFactor = 0.1;
 
 let mainLoopInterval;
 
@@ -14,16 +14,14 @@ function initializeScene() {
   sceneCanvas = setupCanvas(1920, 1080);
   sceneCanvasCTX = sceneCanvas.getContext("2d");
 
-  walls = initializeWalls(5, 100, 200, 300, 800, 500, 700);
+  walls = initializeWalls(5, 100, 300, 300, 800, 500, 700);
 
   for (let i = 0; i < totalAgents; i++) {
-    players.push(initializePlayer(100, 500, 50, 0.5));
-    networks.push(new NeuralNetwork(4, [4], [3], 1));
+    players.push(initializePlayer(100, 500, 50, 0.3));
+    networks.push(new NeuralNetwork(4, [4], [4], 1));
   }
 
-  mainLoopInterval = setInterval(() => {
-    mainLoop();
-  }, 20);
+  requestAnimationFrame(mainLoop);
 }
 
 function newGeneration(winningNetwork) {
@@ -33,14 +31,14 @@ function newGeneration(winningNetwork) {
   walls = [];
   networksFailureTimes = [];
   gameOver = [];
-  walls = initializeWalls(5, 100, 200, 300, 800, 500, 700);
+  walls = initializeWalls(5, 100, 300, 300, 800, 500, 700);
   for (let i = 0; i < totalAgents; i++) {
-    players.push(initializePlayer(100, 500, 50, 0.5));
+    players.push(initializePlayer(100, 500, 50, 0.3));
     networks.push(
       new NeuralNetwork(
         4,
         [4],
-        [3],
+        [4],
         1,
         winningNetwork.inputLayer,
         winningNetwork.hiddenLayers,
@@ -51,10 +49,7 @@ function newGeneration(winningNetwork) {
     networks[i].geneticEvolution(geneticDivergenceFactor);
     console.log(networks[i]);
   }
-
-  // mainLoopInterval = setInterval(() => {
-  //   mainLoop();
-  // }, 20);
+  requestAnimationFrame(mainLoop);
 }
 
 function getAgentAction(network, player, walls) {
@@ -102,14 +97,14 @@ function getMostRecentIndices(array, count) {
 function mainLoop() {
   clearCanvas(sceneCanvas, sceneCanvasCTX);
 
-  updateWalls(walls, 100, 200, 300, 800, 500);
+  updateWalls(walls, 100, 300, 300, 800, 500);
   moveWalls(walls);
 
   let livingPlayersCount = 0;
   for (let i = 0; i < players.length; i++) {
     if (!gameOver[i]) {
       if (getAgentAction(networks[i], players[i], walls)) {
-        jumpPlayer(players[i], 15);
+        jumpPlayer(players[i], 10);
       }
       movePlayer(players[i]);
       updatePlayerVelocity(players[i]);
@@ -135,8 +130,9 @@ function mainLoop() {
 
   if (livingPlayersCount == 0) {
     clearInterval(mainLoopInterval);
-    console.log(getMostRecentIndices(networksFailureTimes, 1));
     newGeneration(networks[getMostRecentIndices(networksFailureTimes, 1)]);
+  } else {
+    requestAnimationFrame(mainLoop);
   }
 }
 
@@ -358,7 +354,7 @@ class NeuralNetwork {
         inputNeurons.push(
           new Neuron(
             1,
-            inputLayer.neurons[i].weights,
+            [...inputLayer.neurons[i].weights],
             inputLayer.neurons[i].bias
           )
         );
@@ -386,10 +382,11 @@ class NeuralNetwork {
       for (let i = 0; i < hiddenLayersInputs.length; i++) {
         let hiddenLayerNeurons = [];
         for (let j = 0; j < hiddenLayersHeights[i]; j++) {
+          console.log(hiddenLayers[i].neurons);
           hiddenLayerNeurons.push(
             new Neuron(
               hiddenLayersInputs[i],
-              hiddenLayers[i].neurons[j].weights,
+              [...hiddenLayers[i].neurons[j].weights],
               hiddenLayers[i].neurons[j].bias
             )
           );
@@ -414,8 +411,8 @@ class NeuralNetwork {
         outputNeurons.push(
           new Neuron(
             this.hiddenLayers[this.hiddenLayers.length - 1].neurons.length,
-            outputLayer.weights,
-            outputLayer.bias
+            [...outputLayer.neurons[i].weights],
+            outputLayer.neurons[i].bias
           )
         );
       }
@@ -465,10 +462,7 @@ class Layer {
 
   geneticEvolution(geneticDivergenceFactor) {
     for (let i = 0; i < this.neurons.length; i++) {
-      console.log("test");
-      console.log(this.neurons[i]);
       this.neurons[i].geneticEvolution(geneticDivergenceFactor);
-      console.log(this.neurons[i]);
     }
   }
 
@@ -492,7 +486,7 @@ class Neuron {
       this.weights = weights;
     }
 
-    if (this.bias == null) {
+    if (bias == null) {
       this.bias = Math.random() - 0.5;
     } else {
       this.bias = bias;
@@ -503,7 +497,6 @@ class Neuron {
     for (let i = 0; i < this.weights.length; i++) {
       this.weights[i] += (Math.random() - 0.5) * geneticDivergenceFactor;
     }
-
     this.bias += (Math.random() - 0.5) * geneticDivergenceFactor;
   }
 
@@ -520,7 +513,7 @@ class Neuron {
       output += inputs[i] * this.weights[i];
     }
 
-    //output += this.bias;
+    output += this.bias;
 
     return sigmoid(output);
   }
