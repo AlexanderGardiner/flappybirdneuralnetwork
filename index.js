@@ -7,14 +7,16 @@ let networks = [];
 let networksFailureTimes = [];
 let totalAgents = 1000;
 let geneticDivergenceFactor = 0.1;
+let startingWallSpeed = 5;
+let wallSpeed = startingWallSpeed;
 
 let mainLoopInterval;
-
+let aliveAgents = document.getElementById("aliveAgents");
 function initializeScene() {
   sceneCanvas = setupCanvas(1920, 1080);
   sceneCanvasCTX = sceneCanvas.getContext("2d");
 
-  walls = initializeWalls(5, 100, 300, 300, 800, 500, 700);
+  walls = initializeWalls(5, 70, 220, 300, 800, 500, 700);
 
   for (let i = 0; i < totalAgents; i++) {
     players.push(initializePlayer(100, 500, 50, 0.3));
@@ -25,13 +27,13 @@ function initializeScene() {
 }
 
 function newGeneration(winningNetwork) {
-  console.log(winningNetwork);
   players = [];
   networks = [];
   walls = [];
   networksFailureTimes = [];
   gameOver = [];
-  walls = initializeWalls(5, 100, 300, 300, 800, 500, 700);
+  wallSpeed = startingWallSpeed;
+  walls = initializeWalls(5, 70, 220, 300, 800, 500, 700);
   for (let i = 0; i < totalAgents; i++) {
     players.push(initializePlayer(100, 500, 50, 0.3));
     networks.push(
@@ -45,10 +47,9 @@ function newGeneration(winningNetwork) {
         winningNetwork.outputLayer
       )
     );
-    console.log(networks[i]);
     networks[i].geneticEvolution(geneticDivergenceFactor);
-    console.log(networks[i]);
   }
+
   requestAnimationFrame(mainLoop);
 }
 
@@ -62,7 +63,6 @@ function getAgentAction(network, player, walls) {
       closestWall = wall;
     }
   }
-  // console.log(network);
   let computation = network.computeOutputs([
     [horizontalDistanceFromPlayerToWall(player, closestWall)],
     [playerDistanceFromGround(player)],
@@ -97,14 +97,14 @@ function getMostRecentIndices(array, count) {
 function mainLoop() {
   clearCanvas(sceneCanvas, sceneCanvasCTX);
 
-  updateWalls(walls, 100, 300, 300, 800, 500);
+  updateWalls(walls, 70, 220, 300, 800, 500);
   moveWalls(walls);
 
   let livingPlayersCount = 0;
   for (let i = 0; i < players.length; i++) {
     if (!gameOver[i]) {
       if (getAgentAction(networks[i], players[i], walls)) {
-        jumpPlayer(players[i], 10);
+        jumpPlayer(players[i], 8);
       }
       movePlayer(players[i]);
       updatePlayerVelocity(players[i]);
@@ -122,12 +122,21 @@ function mainLoop() {
       drawPlayer(players[i], sceneCanvasCTX, sceneCanvas.height, "blue", 1);
       livingPlayersCount += 1;
     } else {
-      drawPlayer(players[i], sceneCanvasCTX, sceneCanvas.height, "red", 0.2);
+      drawPlayer(players[i], sceneCanvasCTX, sceneCanvas.height, "red", 0.05);
     }
   }
 
   drawWalls(walls, sceneCanvasCTX, sceneCanvas.height);
 
+  aliveAgents.innerHTML = "Agents Alive: " + livingPlayersCount;
+  if (geneticDivergenceFactor > 0.005) {
+    geneticDivergenceFactor -= 0.00001;
+  } else {
+    geneticDivergenceFactor = 0;
+  }
+  console.log(geneticDivergenceFactor);
+
+  wallSpeed += 0.001;
   if (livingPlayersCount == 0) {
     clearInterval(mainLoopInterval);
     newGeneration(networks[getMostRecentIndices(networksFailureTimes, 1)]);
@@ -192,7 +201,7 @@ function jumpPlayer(player, velocity) {
 
 function moveWalls(walls) {
   for (let wall of walls) {
-    wall.xPosition -= 5;
+    wall.xPosition -= wallSpeed;
   }
 }
 
@@ -382,7 +391,6 @@ class NeuralNetwork {
       for (let i = 0; i < hiddenLayersInputs.length; i++) {
         let hiddenLayerNeurons = [];
         for (let j = 0; j < hiddenLayersHeights[i]; j++) {
-          console.log(hiddenLayers[i].neurons);
           hiddenLayerNeurons.push(
             new Neuron(
               hiddenLayersInputs[i],
@@ -429,22 +437,15 @@ class NeuralNetwork {
   }
 
   computeOutputs(inputs) {
-    // console.log(inputs);
     let inputLayerOutputs = this.inputLayer.computeOutputs(inputs);
-    // console.log("input layer", inputLayerOutputs);
     let hiddenLayerOutputs = [];
 
     for (let i = 0; i < this.hiddenLayers[0].neurons.length; i++) {
       hiddenLayerOutputs.push(inputLayerOutputs);
     }
-    // console.log("hidden layer inputs", hiddenLayerOutputs);
     for (let i = 0; i < this.hiddenLayers.length; i++) {
       hiddenLayerOutputs =
         this.hiddenLayers[i].computeOutputs(hiddenLayerOutputs);
-      // console.log("hidden layer outputs", hiddenLayerOutputs);
-
-      // console.log("test");
-      // console.log("hidden layer ", i, hiddenLayerOutputs);
     }
 
     let outputLayerOutputs = this.outputLayer.computeOutputs([
@@ -501,8 +502,6 @@ class Neuron {
   }
 
   compute(inputs) {
-    // console.log(inputs.length);
-    // console.log(this.weights.length);
     if (inputs.length != this.weights.length) {
       console.log("Error, weights and inputs must have the same length");
       return "Error, weights and inputs must have the same length";

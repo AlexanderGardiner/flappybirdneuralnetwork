@@ -4,3 +4,11 @@
   margin: 2%;
   outline: black 3px solid;
 }
+
+#aliveAgents {
+  left: 0px;
+  top: 0px;
+  margin-left: 3%;
+  font-size: large;
+  position: absolute;
+}
