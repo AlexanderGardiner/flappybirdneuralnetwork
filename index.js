@@ -132,7 +132,7 @@ function mainLoop() {
 
   aliveAgents.innerHTML = "Agents Alive: " + livingPlayersCount;
   if (geneticDivergenceFactor > 0.005) {
-    geneticDivergenceFactor -= 0.00001;
+    geneticDivergenceFactor -= 0.00002;
   } else {
     geneticDivergenceFactor = 0.002;
   }
