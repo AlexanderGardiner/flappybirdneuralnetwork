@@ -5,8 +5,8 @@ let players = [];
 let gameOver = [];
 let networks = [];
 let networksFailureTimes = [];
-let totalAgents = 1000;
-let geneticDivergenceFactor = 0.1;
+let totalAgents = 100;
+let geneticDivergenceFactor = 0.2;
 let startingWallSpeed = 5;
 let wallSpeed = startingWallSpeed;
 let mainLoopInterval;
@@ -15,11 +15,13 @@ function initializeScene() {
   sceneCanvas = setupCanvas(1920, 1080);
   sceneCanvasCTX = sceneCanvas.getContext("2d");
 
-  walls = initializeWalls(5, 70, 220, 300, 800, 500, 700);
+  walls = initializeWalls(5, 70, 220, 300, 700, 500, 700);
 
   for (let i = 0; i < totalAgents; i++) {
     players.push(initializePlayer(100, 500, 50, 0.3));
     networks.push(new NeuralNetwork(4, [4], [4], 1));
+    // console.log(networks[i]);
+    // getAgentAction(networks[i], players[i], walls);
   }
 
   requestAnimationFrame(mainLoop);
@@ -32,7 +34,7 @@ function newGeneration(winningNetwork) {
   networksFailureTimes = [];
   gameOver = [];
   wallSpeed = startingWallSpeed;
-  walls = initializeWalls(5, 70, 220, 300, 800, 500, 700);
+  walls = initializeWalls(5, 70, 220, 300, 700, 500, 700);
   for (let i = 0; i < totalAgents; i++) {
     players.push(initializePlayer(100, 500, 50, 0.3));
     networks.push(
@@ -46,6 +48,7 @@ function newGeneration(winningNetwork) {
         winningNetwork.outputLayer
       )
     );
+
     networks[i].geneticEvolution(geneticDivergenceFactor);
   }
 
@@ -96,7 +99,7 @@ function getMostRecentIndices(array, count) {
 function mainLoop() {
   clearCanvas(sceneCanvas, sceneCanvasCTX);
 
-  updateWalls(walls, 70, 220, 300, 800, 500);
+  updateWalls(walls, 70, 220, 300, 700, 500);
   moveWalls(walls);
 
   let livingPlayersCount = 0;
@@ -131,10 +134,10 @@ function mainLoop() {
   if (geneticDivergenceFactor > 0.005) {
     geneticDivergenceFactor -= 0.00001;
   } else {
-    geneticDivergenceFactor = 0.0;
+    geneticDivergenceFactor = 0.002;
   }
 
-  wallSpeed += 0.001;
+  wallSpeed += 0.0005;
 
   if (livingPlayersCount == 0) {
     clearInterval(mainLoopInterval);
@@ -438,13 +441,26 @@ class NeuralNetwork {
   computeOutputs(inputs) {
     let inputLayerOutputs = this.inputLayer.computeOutputs(inputs);
     let hiddenLayerOutputs = [];
+    if (this.hiddenLayers.length > 0) {
+      for (let j = 0; j < this.hiddenLayers[0].neurons.length; j++) {
+        hiddenLayerOutputs.push(inputLayerOutputs);
+      }
+      for (let i = 0; i < this.hiddenLayers.length; i++) {
+        let outputs = this.hiddenLayers[i].computeOutputs(hiddenLayerOutputs);
+        hiddenLayerOutputs = [];
 
-    for (let i = 0; i < this.hiddenLayers[0].neurons.length; i++) {
-      hiddenLayerOutputs.push(inputLayerOutputs);
-    }
-    for (let i = 0; i < this.hiddenLayers.length; i++) {
-      hiddenLayerOutputs =
-        this.hiddenLayers[i].computeOutputs(hiddenLayerOutputs);
+        if (i < this.hiddenLayers.length - 1) {
+          for (let j = 0; j < this.hiddenLayers[i + 1].neurons.length; j++) {
+            hiddenLayerOutputs.push(outputs);
+          }
+        } else {
+          hiddenLayerOutputs = outputs;
+        }
+      }
+    } else {
+      for (let j = 0; j < this.outputLayer.neurons.length; j++) {
+        hiddenLayerOutputs.push(inputLayerOutputs);
+      }
     }
 
     let outputLayerOutputs = this.outputLayer.computeOutputs([
@@ -503,6 +519,7 @@ class Neuron {
   compute(inputs) {
     if (inputs.length != this.weights.length) {
       console.log("Error, weights and inputs must have the same length");
+      console.log(new Error());
       return "Error, weights and inputs must have the same length";
     }
 
